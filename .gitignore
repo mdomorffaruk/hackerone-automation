@@ -6,5 +6,10 @@ scopes/
 .venv/*
 .venv/
 
+subdomains/*
+subdomains/
+subdomains
+
 handles.txt 
 all-domains.txt
+subdomainlist.txt

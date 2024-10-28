@@ -12,11 +12,20 @@ os.makedirs("scopes", exist_ok=True)
 # File to store all program handles
 handles_file = "handles.txt"
 
-# Step 1: Get Programs List (with up to 100 programs per page)
+# Prompt user for the number of programs to fetch
+try:
+    num_programs = int(input("Enter the number of programs to retrieve (1-100): "))
+    if num_programs < 1 or num_programs > 100:
+        raise ValueError("Number out of range. Please enter a number between 1 and 100.")
+except ValueError as e:
+    print(e)
+    exit(1)
+
+# Step 1: Get Programs List with user-defined page size
 url_programs = "https://api.hackerone.com/v1/hackers/programs"
 response = requests.get(
     url_programs,
-    params={"page[size]": 100},
+    params={"page[size]": num_programs},
     auth=HTTPBasicAuth(username, api_key),
     headers={"Accept": "application/json"}
 )
