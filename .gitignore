@@ -1,0 +1,9 @@
+scopes/*
+scopes
+scopes/
+
+.venv
+.venv/*
+.venv/
+
+handles.txt 
