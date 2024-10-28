@@ -10,14 +10,30 @@ source .venv/bin/activate
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
-# Step 2: Ask if the user wants a fresh start by clearing previous results
-read -p "Do you want a fresh start? (This will delete all previous results) (Y/N): " fresh_start
-if [[ "$fresh_start" =~ ^[Yy]$ ]]; then
-    echo "Clearing previous results..."
-    rm -f all-domains.txt handles.txt all-subs.txt subdomainlist.txt
-    rm -rf scopes subdomains
-    echo "Previous results cleared."
-fi
+# Step 2: Ask if the user wants a fresh start, continue, or run the vulnerability scan
+read -p "Choose an option: (F)resh start, (C)ontinue, or run (V)uln scan directly: " choice
+
+case "$choice" in
+    [Ff])  # Fresh start
+        echo "Clearing previous results..."
+        rm -f all-domains.txt handles.txt all-subs.txt subdomainlist.txt
+        rm -rf scopes subdomains
+        echo "Previous results cleared."
+        ;;
+    [Cc])  # Continue
+        echo "Continuing where you left off..."
+        ;;
+    [Vv])  # Run vulnerability scan directly
+        echo "Running vulnerability scan..."
+        sudo vulnScan/runAllScan.sh
+        exit 0  # Exit the script after running the scan
+        ;;
+    *)  # Invalid input
+        echo "Invalid choice. Exiting."
+        exit 1  # Exit the script if the input is invalid
+        ;;
+esac
+
 
 # Step 3: Check if scopes directory exists then ask user if they want to delete scopes and run the Python file for getting scope again
 if [ -d "scopes" ]; then
@@ -51,14 +67,56 @@ done
 sort -u all-domains.txt -o all-domains.txt
 echo "All valid domains collected in all-domains.txt."
 
-# Step 7: Create a subdomains folder if it doesn't exist
+# Step 7: Create a subdomains f Colder if it doesn't exist
 mkdir -p subdomains
 
 # Step 8: Create individual subdomains files for each domain
+# Initialize the overwrite choice
+overwrite_all=""
 echo "Creating individual subdomains files..."
 while read -r domain; do
     domain_file="subdomains/${domain//\//_}_subs.txt" # Replace slashes with underscores
-    echo "$domain" > "$domain_file"  # Create the file and write the domain name to it
+    # Check if the domain file already exists
+    if [ -f "$domain_file" ]; then
+        # If overwrite_all is not set, ask the user for their choice
+        if [ -z "$overwrite_all" ]; then
+            read -p "File already exists: $domain_file. Do you want to overwrite it? (Y/N) or (YA/NA for all): " overwrite_choice
+
+            # Set overwrite_all based on user input
+            case "$overwrite_choice" in
+                [Yy]) 
+                    echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
+                    echo "Overwritten file: $domain_file"
+                    ;;
+                [Nn]) 
+                    echo "Skipping file creation for: $domain_file"
+                    ;;
+                [Yy][Aa]) 
+                    echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
+                    echo "Overwritten file: $domain_file"
+                    overwrite_all="yes"  # Set to overwrite all
+                    ;;
+                [Nn][Aa]) 
+                    echo "Skipping file creation for: $domain_file"
+                    overwrite_all="no"  # Set to skip all
+                    ;;
+                *) 
+                    echo "Invalid choice. Skipping file creation for: $domain_file"
+                    ;;
+            esac
+        else
+            if [ "$overwrite_all" = "yes" ]; then
+                echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
+                echo "Overwritten file: $domain_file"
+            else
+                echo "Skipping file creation for: $domain_file"
+            fi
+        fi
+    else
+        echo "$domain" > "$domain_file"  # Create the file and write the domain name to it
+        echo "Created file: $domain_file"
+    fi
+    # echo "$domain" > "$domain_file"  # Create the file and write the domain name to it
 done < all-domains.txt
 
 # Step 9: Run Subfinder for each domain and save to respective files
@@ -68,7 +126,11 @@ mkdir -p subdomains  # Create the subdomains directory if it doesn't exist
 while read -r domain; do
     # Remove any existing output file for the domain
     output_file="subdomains/${domain}_subs.txt"
-    
+    # Check if the output file already exists and has more than one entry
+    if [ -f "$output_file" ] && [ $(wc -l < "$output_file") -gt 1 ]; then
+        echo "Skipping $domain; seems subdomains already scanned, we found more than one entry."
+        continue  # Skip to the next domain
+    fi
     # Run Subfinder for the current domain
     subfinder -d "$domain" -o "$output_file"
     

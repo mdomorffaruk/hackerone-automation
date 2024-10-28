@@ -1,15 +1,19 @@
+# Ignore everything in the scopes directory
 scopes/*
-scopes
 scopes/
+scopes
 
-.venv
-.venv/*
+# Ignore virtual environment directory
 .venv/
+.venv/*
+.venv
 
+# Ignore everything in the subdomains directory
 subdomains/*
 subdomains/
 subdomains
 
-handles.txt 
+# Ignore specific text files
+handles.txt
 all-domains.txt
 subdomainlist.txt
