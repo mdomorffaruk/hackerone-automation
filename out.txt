@@ -1,0 +1,21 @@
+[INF] Current nuclei version: v3.3.4 (outdated)
+[INF] Current nuclei-templates version: v10.0.2 (latest)
+[WRN] Scan results upload to cloud is disabled.
+[INF] New templates added in latest release: 68
+[INF] Templates loaded for current scan: 72
+[INF] Executing 72 signed templates from projectdiscovery/nuclei-templates
+[INF] Targets loaded for current scan: 97101
+[INF] Running httpx on input host
+[INF] Found 54509 URL from httpx
+[INF] Templates clustered: 69 (Reduced 6505767 Requests)
+[github-takeover] [http] [high] https://archive.backstage.io
+[wix-takeover] [http] [high] https://flyiin.com
+[github-takeover] [http] [high] https://license.npmjs.com ["npm.github.io"]
+[github-takeover] [http] [high] https://mta-sts.forwarding.hackerone.com ["hacker0x01.github.io"]
+[github-takeover] [http] [high] https://mta-sts.hackerone.com ["hacker0x01.github.io"]
+[github-takeover] [http] [high] https://mta-sts.managed.hackerone.com ["hacker0x01.github.io"]
+[netlify-takeover] [http] [high] https://www-netlify-staging.wealthsimple.com ["wealthsimple.netlifyglobalcdn.com"]
+[netlify-takeover] [http] [high] https://www-netlify.wealthsimple.com ["wealthsimple.netlifyglobalcdn.com"]
+[wix-takeover] [http] [high] https://www.flyiin.com ["www151.wixdns.net"]
+Subdomain takeover scan completed.
+All vulnerability scans completed.

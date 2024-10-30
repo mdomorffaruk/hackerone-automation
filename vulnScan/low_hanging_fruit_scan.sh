@@ -9,7 +9,9 @@ fi
 
 # Step 1: Check for subdomain takeover vulnerabilities
 echo "Checking for subdomain takeover vulnerabilities..."
-nuclei -t /home/billi/nuclei-templates/http/takeovers/ -l subdomainlist.txt
+# nuclei -t /home/billi/nuclei-templates/http/takeovers/ -l subdomainlist.txt
+
+subzy r --targets subdomainlist.txt --hide_fails
 
 echo "Subdomain takeover scan completed."
 #!/bin/bash
