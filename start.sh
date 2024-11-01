@@ -158,6 +158,8 @@ echo "All subdomains saved to subdomainlist.txt."
 
 # Optional: Print the content of subdomainlist.txt
 # cat subdomainlist.txt
+httpx -l subdomainlist.txt -silent -no-color -follow-redirects -title -status-code -web-server -o nuclei_subdomainlist_with_protocol.txt
 
+cat nuclei_subdomainlist_with_protocol.txt  | cut -d " " -f 1 > nuclei_subdomainlist.txt
 # Step 12: Run Vuln Scans
 sudo vulnScan/runAllScan.sh
