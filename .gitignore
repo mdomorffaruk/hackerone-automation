@@ -20,3 +20,8 @@ subdomainlist.txt
 
 # Ignore .env
 .env
+
+# Ignore old folder
+old
+old/
+old/*
