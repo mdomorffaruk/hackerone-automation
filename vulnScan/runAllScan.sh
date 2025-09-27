@@ -1,21 +1,23 @@
 #!/bin/bash
-# runAllScan.sh
 
-# Step 1: Run OWASP Top 10 Vulnerability Scans
-echo "Running OWASP Top 10 Vulnerability Scans..."
-for script in ./vulnScan/owasp_top_10/*.sh; do
-    if [ -f "$script" ]; then
-        echo "Executing $script..."
-        bash "$script"
-    else
-        echo "No OWASP Top 10 scripts found."
-    fi
-done
+# Source the configuration file
+source ../config.sh
 
-# Step 2: Run Low Hanging Fruit Scan
-echo "Running Low Hanging Fruit Vulnerability Scans..."
-pwd
-bash ./vulnScan/low_hanging_fruit_scan.sh
+# --- Main Script ---
 
-# Optional: Indicate completion
-echo "All vulnerability scans completed."
+# Run the scanner for each category
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh xss
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh sqli
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh command-injection
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh path-traversal
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh file-upload
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh xxe
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh broken-access-control
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh cryptographic-failures
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh injection
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh insecure-design
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh security-misconfiguration
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh vulnerable-and-outdated-components
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh identification-and-authentication-failures
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh software-and-data-integrity-failures
+/home/billi/Desktop/h1-automate/vulnScan/scan.sh ssrf

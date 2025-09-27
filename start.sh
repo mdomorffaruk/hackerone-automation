@@ -1,165 +1,238 @@
 #!/bin/bash
-# start.sh
 
-# Step 1: Setup virtual environment and install dependencies
-python3 -m venv .venv
-# Optional: Activate virtual environment (if you use one)
-source .venv/bin/activate
+# Source the configuration file
+source config.sh
 
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
+# --- Functions ---
 
-# Step 2: Ask if the user wants a fresh start, continue, or run the vulnerability scan
-read -p "Choose an option: (F)resh start, (C)ontinue, or run (V)uln scan directly: " choice
+# Function to print log messages
+log() {
+    echo "[+] $1"
+}
 
-case "$choice" in
-    [Ff])  # Fresh start
-        echo "Clearing previous results..."
-        rm -f all-domains.txt handles.txt all-subs.txt subdomainlist.txt
-        rm -rf scopes subdomains
-        echo "Previous results cleared."
-        ;;
-    [Cc])  # Continue
-        echo "Continuing where you left off..."
-        ;;
-    [Vv])  # Run vulnerability scan directly
-        echo "Running vulnerability scan..."
-        sudo vulnScan/runAllScan.sh
-        exit 0  # Exit the script after running the scan
-        ;;
-    *)  # Invalid input
-        echo "Invalid choice. Exiting."
-        exit 1  # Exit the script if the input is invalid
-        ;;
-esac
-
-
-# Step 3: Check if scopes directory exists then ask user if they want to delete scopes and run the Python file for getting scope again
-if [ -d "scopes" ]; then
-    read -p "Scopes folder exists. Do you want to delete it and retrieve scopes again? (Y/N): " delete_scopes
-    if [[ "$delete_scopes" =~ ^[Yy]$ ]]; then
-        rm -rf scopes
-        echo "Retrieving scopes again..."
-        python3 get-h1-opportunity-list.py
-    else
-        echo "Skipping scope retrieval script."
+# Function to check if a tool is installed
+check_tool() {
+    if ! [ -x "$(command -v $1)" ]; then
+        echo "Error: $1 is not installed. Please run install.sh and try again." >&2
+        exit 1
     fi
-else
-    # Run the Python script if scopes directory does not exist
-    echo "Running the Python script for generating HackerOne opportunity handles and getting their scopes..."
-    python3 get-h1-opportunity-list.py
-fi
+}
 
-# Step 4: Create or clear the all-domains.txt file
-echo "Collecting all domains into all-domains.txt..."
-> all-domains.txt  # Clear the file if it exists or create it if it doesn't
+# Function to set up the environment
+setup_environment() {
+    log "Setting up virtual environment and installing dependencies..."
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
+}
 
-# Step 5: Extract valid domains from scopes files
-for file in scopes/*_scopes.txt; do
-    if [ -f "$file" ]; then
-        # Extract valid domains excluding invalid entries
-        grep -Eo '([a-zA-Z0-9-]+\.[a-zA-Z]{2,6}(\.[a-zA-Z]{2,6})?)' "$file" | sed 's/^\*\.//; s/^www\.//; s/https\?:\/\///; s/\/.*$//' | grep -v '^[a-zA-Z0-9-]*$' >> all-domains.txt
+# Function to get the scope from HackerOne
+get_scope() {
+    log "Getting scope from HackerOne..."
+    python3 get-h1-opportunity-list.py --h1-handle "$H1_PROGRAM_HANDLE"
+}
+
+# Function to enumerate subdomains
+enumerate_subdomains() {
+    log "Enumerating subdomains..."
+    # Create a directory for the target domain
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        mkdir -p "$OUTPUT_DIR/$domain"
+        subfinder -d "$domain" -o "$OUTPUT_DIR/$domain/subfinder.txt"
+        assetfinder --subs-only "$domain" | tee "$OUTPUT_DIR/$domain/assetfinder.txt"
+        amass enum -d "$domain" -o "$OUTPUT_DIR/$domain/amass.txt"
+        cat "$OUTPUT_DIR/$domain/subfinder.txt" "$OUTPUT_DIR/$domain/assetfinder.txt" "$OUTPUT_DIR/$domain/amass.txt" | sort -u > "$OUTPUT_DIR/$domain/all_subdomains.txt"
+    done
+}
+
+# Function to probe subdomains
+probe_subdomains() {
+    log "Probing subdomains..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        httpx -l "$OUTPUT_DIR/$domain/all_subdomains.txt" -o "$OUTPUT_DIR/$domain/live_subdomains.txt" -silent -no-color -follow-redirects -title -status-code -web-server
+    done
+}
+
+# Function to perform a port scan
+port_scan() {
+    log "Performing port scan..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        nmap -iL "$OUTPUT_DIR/$domain/live_subdomains.txt" -oN "$OUTPUT_DIR/$domain/nmap_scan.txt"
+    done
+}
+
+# Function to identify the technology stack
+tech_stack() {
+    log "Identifying technology stack..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        whatweb -i "$OUTPUT_DIR/$domain/live_subdomains.txt" --log-verbose "$OUTPUT_DIR/$domain/whatweb_output.txt"
+    done
+}
+
+# Function to discover content
+content_discovery() {
+    log "Discovering content..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        dirsearch -l "$OUTPUT_DIR/$domain/live_subdomains.txt" -o "$OUTPUT_DIR/$domain/dirsearch_output.txt" $DIRSEARCH_FLAGS
+        gobuster dir -u "https://www.$domain" -w "$CONTENT_WORDLIST" -o "$OUTPUT_DIR/$domain/gobuster_output.txt" $GOBUSTER_FLAGS
+    done
+}
+
+# Function to discover parameters
+parameter_discovery() {
+    log "Discovering parameters..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        paramspider -d "$domain" -o "$OUTPUT_DIR/$domain/paramspider_output.txt"
+    done
+}
+
+# Function for visual reconnaissance
+visual_recon() {
+    log "Performing visual reconnaissance..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        gitleaks --repo-path="https://github.com/$domain" --report="$OUTPUT_DIR/$domain/gitleaks_report.json"
+    done
+}
+
+# Function for JavaScript analysis
+js_analysis() {
+    log "Performing JavaScript analysis..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        python3 /opt/LinkFinder/linkfinder.py -i "https://$domain" -o "$OUTPUT_DIR/$domain/linkfinder_output.html"
+    done
+}
+
+# Function for Wayback Machine analysis
+wayback_analysis() {
+    log "Performing Wayback Machine analysis..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        waybackurls "$domain" > "$OUTPUT_DIR/$domain/waybackurls.txt"
+    done
+}
+
+# Function for favicon analysis
+favicon_analysis() {
+    log "Performing favicon analysis..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        python3 /opt/FavFreak/favfreak.py -d "$domain" -o "$OUTPUT_DIR/$domain/favfreak_output.txt"
+    done
+}
+
+# Function for dynamic analysis
+dynamic_scan() {
+    log "Performing dynamic analysis..."
+    if [ "$SELENIUM_ENABLED" = true ]; then
+        for domain in "${TARGET_DOMAINS[@]}"; do
+            python3 dynamic_scan.py "https://$domain" --output-dir "$OUTPUT_DIR/$domain"
+        done
     fi
+}
+
+# Function to run vulnerability scan
+vulnerability_scan() {
+    log "Running vulnerability scan..."
+    for domain in "${TARGET_DOMAINS[@]}"; do
+        nuclei -l "$OUTPUT_DIR/$domain/live_subdomains.txt" -o "$OUTPUT_DIR/$domain/nuclei_output.txt" $NUCLEI_FLAGS
+    done
+}
+
+# --- Main Script ---
+
+# Check if the required tools are installed
+check_tool subfinder
+check_tool assetfinder
+check_tool amass
+check_tool httpx
+check_tool nuclei
+check_tool nmap
+check_tool whatweb
+check_tool dirsearch
+check_tool gobuster
+check_tool paramspider
+check_tool gitleaks
+check_tool waybackurls
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --setup)
+            setup_environment
+            shift
+            ;;
+        --get-scope)
+            get_scope
+            shift
+            ;;
+        --enumerate)
+            enumerate_subdomains
+            shift
+            ;;
+        --probe)
+            probe_subdomains
+            shift
+            ;;
+        --portscan)
+            port_scan
+            shift
+            ;;
+        --tech-stack)
+            tech_stack
+            shift
+            ;;
+        --content-discovery)
+            content_discovery
+            shift
+            ;;
+        --parameter-discovery)
+            parameter_discovery
+            shift
+            ;;
+        --visual-recon)
+            visual_recon
+            shift
+            ;;
+        --js-analysis)
+            js_analysis
+            shift
+            ;;
+        --wayback-analysis)
+            wayback_analysis
+            shift
+            ;;
+        --favicon-analysis)
+            favicon_analysis
+            shift
+            ;;
+        --dynamic-scan)
+            dynamic_scan
+            shift
+            ;;
+        --scan)
+            vulnerability_scan
+            shift
+            ;;
+        --all)
+            setup_environment
+            get_scope
+            enumerate_subdomains
+            probe_subdomains
+            port_scan
+            tech_stack
+            content_discovery
+            parameter_discovery
+            visual_recon
+            js_analysis
+            wayback_analysis
+            favicon_analysis
+            dynamic_scan
+            vulnerability_scan
+            shift
+            ;;
+        *)
+            echo "Invalid option: $1" >&2
+            exit 1
+            ;;
+    esac
 done
 
-# Step 6: Remove duplicates in all-domains.txt
-sort -u all-domains.txt -o all-domains.txt
-echo "All valid domains collected in all-domains.txt."
-
-# Step 7: Create a subdomains f Colder if it doesn't exist
-mkdir -p subdomains
-
-# Step 8: Create individual subdomains files for each domain
-# Initialize the overwrite choice
-overwrite_all=""
-echo "Creating individual subdomains files..."
-while read -r domain; do
-    domain_file="subdomains/${domain//\//_}_subs.txt" # Replace slashes with underscores
-    # Check if the domain file already exists
-    if [ -f "$domain_file" ]; then
-        # If overwrite_all is not set, ask the user for their choice
-        if [ -z "$overwrite_all" ]; then
-            read -p "File already exists: $domain_file. Do you want to overwrite it? (Y/N) or (YA/NA for all): " overwrite_choice
-
-            # Set overwrite_all based on user input
-            case "$overwrite_choice" in
-                [Yy]) 
-                    echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
-                    echo "Overwritten file: $domain_file"
-                    ;;
-                [Nn]) 
-                    echo "Skipping file creation for: $domain_file"
-                    ;;
-                [Yy][Aa]) 
-                    echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
-                    echo "Overwritten file: $domain_file"
-                    overwrite_all="yes"  # Set to overwrite all
-                    ;;
-                [Nn][Aa]) 
-                    echo "Skipping file creation for: $domain_file"
-                    overwrite_all="no"  # Set to skip all
-                    ;;
-                *) 
-                    echo "Invalid choice. Skipping file creation for: $domain_file"
-                    ;;
-            esac
-        else
-            if [ "$overwrite_all" = "yes" ]; then
-                echo "$domain" > "$domain_file"  # Overwrite the file with the domain name
-                echo "Overwritten file: $domain_file"
-            else
-                echo "Skipping file creation for: $domain_file"
-            fi
-        fi
-    else
-        echo "$domain" > "$domain_file"  # Create the file and write the domain name to it
-        echo "Created file: $domain_file"
-    fi
-    # echo "$domain" > "$domain_file"  # Create the file and write the domain name to it
-done < all-domains.txt
-
-# Step 9: Run Subfinder for each domain and save to respective files
-echo "Running Subfinder to gather subdomains for all domains..."
-mkdir -p subdomains  # Create the subdomains directory if it doesn't exist
-
-while read -r domain; do
-    # Remove any existing output file for the domain
-    output_file="subdomains/${domain}_subs.txt"
-    # Check if the output file already exists and has more than one entry
-    if [ -f "$output_file" ] && [ $(wc -l < "$output_file") -gt 1 ]; then
-        echo "Skipping $domain; seems subdomains already scanned, we found more than one entry."
-        continue  # Skip to the next domain
-    fi
-    # Run Subfinder for the current domain
-    subfinder -d "$domain" -o "$output_file"
-    
-    echo "Subdomains for $domain saved to $output_file."
-done < all-domains.txt
-
-# # Combine all subdomain files into subdomainlist.txt
-# echo "Combining all subdomain files into subdomainlist.txt..."
-# cat subdomains/*_subs.txt > subdomainlist.txt
-# echo "All subdomains saved to subdomainlist.txt."
-
-
-# Step 10: Combine all subdomain files into subdomainlist.txt
-echo "Combining all subdomain files into subdomainlist.txt..."
-> subdomainlist.txt  # Clear the file if it exists or create it if it doesn't
-for file in subdomains/*_subs.txt; do
-    if [ -f "$file" ]; then
-        cat "$file" >> subdomainlist.txt
-    fi
-done
-
-# Step 11: Remove duplicates in subdomainlist.txt
-sort -u subdomainlist.txt -o subdomainlist.txt
-echo "All subdomains saved to subdomainlist.txt."
-
-# Optional: Print the content of subdomainlist.txt
-# cat subdomainlist.txt
-httpx -l subdomainlist.txt -silent -no-color -follow-redirects -title -status-code -web-server -o nuclei_subdomainlist_with_protocol.txt
-
-cat nuclei_subdomainlist_with_protocol.txt  | cut -d " " -f 1 > nuclei_subdomainlist.txt
-# Step 12: Run Vuln Scans
-sudo vulnScan/runAllScan.sh
+log "Script finished."

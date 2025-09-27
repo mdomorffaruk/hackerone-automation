@@ -17,3 +17,6 @@ subdomains
 handles.txt
 all-domains.txt
 subdomainlist.txt
+
+# Ignore .env
+.env
