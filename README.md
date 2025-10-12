@@ -1,3 +1,8 @@
+# ⚠️ This project is deprecated ⚠️
+
+This project is no longer being maintained. A new project will be added to this repository soon.
+
+---
 
 # Bug Bounty Automation Framework
 

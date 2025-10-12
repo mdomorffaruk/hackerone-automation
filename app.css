@@ -1,0 +1,10 @@
+
+#tools {
+    layout: horizontal;
+}
+
+.tool_output {
+    width: 1fr;
+    height: 100%;
+    border: solid green;
+}
