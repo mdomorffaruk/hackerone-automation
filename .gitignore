@@ -25,3 +25,10 @@ subdomainlist.txt
 old
 old/
 old/*
+
+# Ignore output directory
+output/
+
+# Ignore Python cache
+__pycache__/
+*.pyc

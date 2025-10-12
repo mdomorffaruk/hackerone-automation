@@ -1,88 +1,108 @@
-# HackerOne Automated Bug Bounty Toolkit
 
-This toolkit provides a set of scripts to automate the process of reconnaissance and vulnerability scanning for bug bounty hunters.
+# Bug Bounty Automation Framework
 
-## Features
-
-- **Automated Tool Installation:** A simple script to install all the necessary tools.
-- **Centralized Configuration:** A single configuration file to manage your target and other settings.
-- **Modular Scripts:** Scripts are broken down into smaller, reusable functions.
-- **OWASP Top 10 Scanning:** The toolkit includes a script to scan for the OWASP Top 10 vulnerabilities using Nuclei.
-- **HackerOne Integration:** A script to fetch scopes from HackerOne programs.
+This is a Python-based framework for automating bug bounty hunting tasks. It is designed to be modular, configurable, and extensible.
 
 ## Directory Structure
 
 ```
 .
-├── config.sh
-├── get-h1-opportunity-list.py
-├── install.sh
-├── output
-├── README.md
-├── requirements.txt
-├── start.sh
-└── vulnScan
-    ├── download-templates.sh
-    ├── runAllScan.sh
-    ├── scan.sh
-    └── templates
+├── config.yaml
+├── main.py
+├── modules/
+│   ├── recon.py
+│   ├── scan.py
+│   ├── reporting.py
+│   └── utils.py
+├── templates/
+│   └── report_template.html
+├── wordlists/
+│   ├── subdomains.txt
+│   └── content.txt
+├── output/
+└── requirements.txt
 ```
+
+## Installation
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone <repository-url>
+    cd <repository-name>
+    ```
+
+2.  **Create and activate a virtual environment:**
+
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+
+3.  **Install Python dependencies:**
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Install external tools:**
+
+    The framework uses several external tools. You need to install them and make sure they are in your PATH.
+
+    *   [subfinder](https://github.com/projectdiscovery/subfinder)
+    *   [assetfinder](https://github.com/tomnomnom/assetfinder)
+    *   [amass](https://github.com/owasp-amass/amass)
+    *   [httpx](https://github.com/projectdiscovery/httpx)
+    *   [nuclei](https://github.com/projectdiscovery/nuclei)
+    *   [nmap](https://nmap.org/)
+    *   [whatweb](https://github.com/urbanadventurer/WhatWeb)
+    *   [dirsearch](https://github.com/maurosoria/dirsearch)
+    *   [gobuster](https://github.com/OJ/gobuster)
+
+## Configuration
+
+Configuration is done through the `config.yaml` file.
+
+*   **`scope`**: Define your target domains and any out-of-scope domains.
+*   **`wordlists`**: Set the paths to your wordlists.
+*   **`tools`**: Enable or disable tools and customize their flags.
+*   **`api_keys`**: Add any API keys you want to use.
 
 ## Usage
 
-1. **Clone the repository:**
+Make sure you have activated the virtual environment:
 
-   ```bash
-   git clone https://github.com/your-username/h1-automate.git
-   cd h1-automate
-   ```
+```bash
+source .venv/bin/activate
+```
 
-2. **Install the required tools:**
+Then, you can run the `main.py` script with the following options:
 
-   ```bash
-   ./install.sh
-   ```
+*   **Run all phases for a target:**
 
-3. **Configure your target:**
+    ```bash
+    python main.py --target example.com --all
+    ```
 
-   Edit the `config.sh` file to set your target domain and other options.
+*   **Run only the reconnaissance phase:**
 
-4. **Set your HackerOne credentials:**
+    ```bash
+    python main.py --target example.com --recon
+    ```
 
-   ```bash
-   export HACKERONE_USERNAME="your-username"
-   export HACKERONE_API_KEY="your-api-key"
-   ```
+*   **Run only the scanning phase:**
 
-5. **Run the automation script:**
+    ```bash
+    python main.py --target example.com --scan
+    ```
 
-   The `start.sh` script provides several options to run the different stages of the process:
+*   **Generate a report:**
 
-   ```bash
-   # Run all stages
-   ./start.sh --all
+    ```bash
+    python main.py --target example.com --report
+    ```
 
-   # Run individual stages
-   ./start.sh --setup
-   ./start.sh --get-scope
-   ./start.sh --enumerate
-   ./start.sh --probe
-   ./start.sh --scan
-   ```
-
-6. **Run the vulnerability scanner:**
-
-   The `vulnScan/runAllScan.sh` script runs the vulnerability scanner for all the OWASP Top 10 categories.
-
-   ```bash
-   ./vulnScan/runAllScan.sh
-   ```
-
-   You can also run the scanner for a specific category:
-
-   ```bash
-   ./vulnScan/scan.sh <category>
-   ```
+The output of the scans will be saved in the `output/` directory, organized by target.
 
 ## Disclaimer
 

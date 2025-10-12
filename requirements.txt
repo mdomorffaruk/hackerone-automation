@@ -1,1 +1,6 @@
+
 requests
+PyYAML
+Jinja2
+selenium
+browsermob-proxy

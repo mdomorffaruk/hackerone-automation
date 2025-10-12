@@ -1,0 +1,112 @@
+
+# -----------------------------------------------------------------------------
+# Bug Bounty Automation Framework Configuration
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# TARGET SCOPE
+#
+# Define the scope of your bug bounty hunting.
+#
+# - targets: A list of your primary targets (e.g., example.com).
+# - scope_file: Path to a file containing a list of in-scope domains/subdomains.
+#               This can be used to load a large number of targets from a file.
+# - out_of_scope: A list of domains/subdomains to exclude from scanning.
+# -----------------------------------------------------------------------------
+scope:
+  targets:
+    - "nba.com"
+    - "wnba.com"
+  scope_file: null
+  out_of_scope:
+    - "example.out.of.scope.com"
+
+# -----------------------------------------------------------------------------
+# WORDLISTS
+#
+# Specify the paths to the wordlists you want to use for various tasks.
+# -----------------------------------------------------------------------------
+wordlists:
+  subdomains: "/snap/seclists/current/Discovery/DNS/subdomains-top1million-5000.txt"
+  content: "/snap/seclists/current/Discovery/Web-Content/common.txt"
+  # Add more wordlists as needed (e.g., for fuzzing, password cracking, etc.)
+  # fuzzing: "/path/to/fuzzing_wordlist.txt"
+
+# -----------------------------------------------------------------------------
+# TOOLS
+#
+# Configure the tools that the framework will use. You can enable/disable
+# tools and specify their settings.
+# -----------------------------------------------------------------------------
+tools:
+  # Subdomain Enumeration
+  subfinder:
+    enabled: true
+    flags: "-silent"
+  assetfinder:
+    enabled: true
+    flags: "--subs-only"
+  amass:
+    enabled: true
+    flags: "enum -passive" # Use passive enumeration for speed
+
+  # Probing
+  httpx:
+    enabled: true
+    flags: "-silent -no-color -follow-redirects -title -status-code -web-server"
+
+  # Port Scanning
+  nmap:
+    enabled: true
+    flags: "-T4 -F" # Fast scan
+
+  # Technology Identification
+  whatweb:
+    enabled: true
+    flags: "--no-errors"
+
+  # Content Discovery
+  dirsearch:
+    enabled: false # Disabled by default as it can be noisy
+    flags: "-e php,html,js,asp,aspx,jsp,txt,bak,old,zip,rar,7z,sql,db,sqlite,git,svn,hg,DS_Store -t 50"
+  gobuster:
+    enabled: true
+    flags: "dir -t 50"
+
+  # Vulnerability Scanning
+  nuclei:
+    enabled: true
+    flags: "-silent -c 50"
+    # You can specify which templates to use here
+    templates:
+      - "technologies"
+      - "cves"
+      - "vulnerabilities"
+      - "default-logins"
+      - "exposed-panels"
+
+# -----------------------------------------------------------------------------
+# API KEYS
+#
+# Add your API keys for services like HackerOne, Shodan, etc.
+# The script will look for these environment variables.
+# -----------------------------------------------------------------------------
+api_keys:
+  hackerone_username: ${HACKERONE_USERNAME}
+  hackerone_api_key: ${HACKERONE_API_KEY}
+  # shodan_api_key: ${SHODAN_API_KEY}
+
+# -----------------------------------------------------------------------------
+# OUTPUT
+#
+# Configure the output directory for the scan results.
+# -----------------------------------------------------------------------------
+output:
+  directory: "output"
+
+# -----------------------------------------------------------------------------
+# THREADS
+#
+# Configure the number of threads to use for scanning.
+# -----------------------------------------------------------------------------
+threads: 4
