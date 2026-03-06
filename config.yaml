@@ -15,8 +15,8 @@
 # -----------------------------------------------------------------------------
 scope:
   targets:
-    - "nba.com"
-    - "wnba.com"
+    - "DOMAIN1.com"
+    - "DOMAIN2.com"
   scope_file: null
   out_of_scope:
     - "example.out.of.scope.com"
