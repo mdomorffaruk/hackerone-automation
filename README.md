@@ -1,9 +1,3 @@
-# ⚠️ This project is deprecated ⚠️
-
-This project is no longer being maintained. A new project will be added to this repository soon.
-
----
-
 # Bug Bounty Automation Framework
 
 This is a Python-based framework for automating bug bounty hunting tasks. It is designed to be modular, configurable, and extensible.
@@ -71,7 +65,7 @@ Configuration is done through the `config.yaml` file.
 *   **`scope`**: Define your target domains and any out-of-scope domains.
 *   **`wordlists`**: Set the paths to your wordlists.
 *   **`tools`**: Enable or disable tools and customize their flags.
-*   **`api_keys`**: Add any API keys you want to use.
+*   **`api_keys`**: Add any API keys you want to use. **This functionality will be added later** 
 
 ## Usage
 
