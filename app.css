@@ -1,10 +1,22 @@
+#status {
+    padding: 0 1;
+    height: 3;
+    content-align: left middle;
+    background: $boost;
+    color: $text;
+}
 
 #tools {
-    layout: horizontal;
+    layout: grid;
+    grid-size: 2 1;
+    grid-columns: 1fr 1fr;
+    grid-gutter: 1 1;
+    padding: 1;
+    height: 1fr;
 }
 
 .tool_output {
-    width: 1fr;
-    height: 100%;
-    border: solid green;
+    border: round $accent;
+    padding: 0 1;
+    overflow-y: auto;
 }

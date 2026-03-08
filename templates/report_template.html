@@ -1,30 +1,85 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Bug Bounty Report for {{ target }}</title>
-    <style>
-        body {
-            font-family: sans-serif;
-        }
-        h1, h2, h3 {
-            color: #333;
-        }
-        pre {
-            background-color: #f4f4f4;
-            padding: 1em;
-            white-space: pre-wrap;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>H1 Automation Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; color: #111; }
+    h1, h2 { margin-bottom: 0.4rem; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #f4f4f4; }
+    code { background: #f1f1f1; padding: 0.1rem 0.25rem; }
+  </style>
 </head>
 <body>
-    <h1>Bug Bounty Report for {{ target }}</h1>
+  <h1>H1 Automation Summary</h1>
+  <p><strong>Target:</strong> {{ summary.target }}</p>
 
-    <h2>Live Subdomains</h2>
-    <pre>{{ "\n".join(live_subdomains) }}</pre>
+  <h2>Counts</h2>
+  <table>
+    <tbody>
+      {% for key, value in summary.counts.items() %}
+      <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-    <h2>Nuclei Scan Results</h2>
-    <pre>{{ nuclei_results }}</pre>
+  <h2>Top Manual Queue</h2>
+  <table>
+    <thead><tr><th>Priority</th><th>Type</th><th>Target</th><th>Reasons</th></tr></thead>
+    <tbody>
+      {% for item in summary.top_manual_items %}
+      <tr>
+        <td>{{ item.priority }}</td>
+        <td>{{ item.type }}</td>
+        <td><code>{{ item.target }}</code></td>
+        <td>{{ item.reasons | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
+  <h2>Top Interesting URLs</h2>
+  <table>
+    <thead><tr><th>Score</th><th>URL</th><th>Keywords</th><th>Sources</th></tr></thead>
+    <tbody>
+      {% for item in summary.top_interesting_urls %}
+      <tr>
+        <td>{{ item.score }}</td>
+        <td><code>{{ item.url }}</code></td>
+        <td>{{ item.matched_keywords | join(', ') }}</td>
+        <td>{{ item.sources | default([]) | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Top Reflection Candidates</h2>
+  <table>
+    <thead><tr><th>URL</th><th>Reasons</th></tr></thead>
+    <tbody>
+      {% for item in summary.top_reflection_candidates %}
+      <tr>
+        <td><code>{{ item.url }}</code></td>
+        <td>{{ item.reason | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Top Takeover Candidates</h2>
+  <table>
+    <thead><tr><th>Host</th><th>Provider</th><th>CNAME</th></tr></thead>
+    <tbody>
+      {% for item in summary.top_takeover_candidates %}
+      <tr>
+        <td><code>{{ item.host }}</code></td>
+        <td>{{ item.provider_hint }}</td>
+        <td><code>{{ item.cname }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </body>
 </html>

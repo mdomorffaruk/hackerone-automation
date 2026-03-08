@@ -1,114 +1,162 @@
-# ⚠️ This project is deprecated ⚠️
+# H1 Automation v0.5.0
 
-This project is no longer being maintained. A new project will be added to this repository soon.
+This version is built to do the boring work well enough that you can spend your time on manual testing instead of data cleanup.
 
----
+It does not pretend to fully replace a hunter.
+It does try to finish with a short, structured, high-signal queue.
 
-# Bug Bounty Automation Framework
+## What it now does better
 
-This is a Python-based framework for automating bug bounty hunting tasks. It is designed to be modular, configurable, and extensible.
+- strict in-scope recon and scan flow
+- JSON-first outputs for every meaningful artifact
+- safer default rates for bug bounty work
+- archive URL ingestion using `gau` and `waybackurls`
+- parameter clustering for tampering and IDOR review
+- takeover hint generation from discovered CNAMEs
+- lightweight reflection / response-diff candidates for parameterized URLs
+- merged live crawl plus archive view for better prioritisation
+- graceful shutdown instead of ugly stack traces on `Ctrl+C`
+- profile modes: `safe`, `normal`, `aggressive`
 
-## Directory Structure
+## Realistic thinking behind the design
 
-```
-.
-├── config.yaml
-├── main.py
-├── modules/
-│   ├── recon.py
-│   ├── scan.py
-│   ├── reporting.py
-│   └── utils.py
-├── templates/
-│   └── report_template.html
-├── wordlists/
-│   ├── subdomains.txt
-│   └── content.txt
-├── output/
-└── requirements.txt
-```
+A useful automation tool for bug bounty should do these jobs:
 
-## Installation
+1. map target surface
+2. enrich it with metadata
+3. cut the noise down
+4. generate test candidates
+5. leave the final call to a human
 
-1.  **Clone the repository:**
+That means this tool is not trying to auto-report nonsense.
+It is trying to finish with:
 
-    ```bash
-    git clone <repository-url>
-    cd <repository-name>
-    ```
+- `interesting_urls_merged.json`
+- `parameter_clusters.json`
+- `reflection_candidates.json`
+- `takeover_candidates.json`
+- `manual_queue.json`
 
-2.  **Create and activate a virtual environment:**
+Those are the files you actually review.
 
-    ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
-    ```
+## New execution profiles
 
-3.  **Install Python dependencies:**
+### Safe
+Use this for most public bounty programs.
+Defaults are intentionally conservative.
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+### Normal
+Faster, but still reasonable.
 
-4.  **Install external tools:**
+### Aggressive
+Only use where the program explicitly allows heavier recon.
 
-    The framework uses several external tools. You need to install them and make sure they are in your PATH.
-
-    *   [subfinder](https://github.com/projectdiscovery/subfinder)
-    *   [assetfinder](https://github.com/tomnomnom/assetfinder)
-    *   [amass](https://github.com/owasp-amass/amass)
-    *   [httpx](https://github.com/projectdiscovery/httpx)
-    *   [nuclei](https://github.com/projectdiscovery/nuclei)
-    *   [nmap](https://nmap.org/)
-    *   [whatweb](https://github.com/urbanadventurer/WhatWeb)
-    *   [dirsearch](https://github.com/maurosoria/dirsearch)
-    *   [gobuster](https://github.com/OJ/gobuster)
-
-## Configuration
-
-Configuration is done through the `config.yaml` file.
-
-*   **`scope`**: Define your target domains and any out-of-scope domains.
-*   **`wordlists`**: Set the paths to your wordlists.
-*   **`tools`**: Enable or disable tools and customize their flags.
-*   **`api_keys`**: Add any API keys you want to use.
-
-## Usage
-
-Make sure you have activated the virtual environment:
+Run with:
 
 ```bash
-source .venv/bin/activate
+python main.py --target example.com --all --profile safe
 ```
 
-Then, you can run the `main.py` script with the following options:
+## Output layout
 
-*   **Run all phases for a target:**
+```text
+output/<target>/
+├── recon/
+│   ├── subdomains.json
+│   ├── subdomains.txt
+│   ├── httpx.json
+│   ├── alive_urls.txt
+│   ├── alive_hosts.txt
+│   ├── katana.jsonl
+│   ├── archived_urls.json
+│   ├── archived_interesting_urls.json
+│   ├── interesting_urls.json
+│   ├── interesting_urls_merged.json
+│   ├── param_clusters.json
+│   ├── javascript_files.txt
+│   ├── waf.json
+│   └── commands.json
+├── scan/
+│   ├── naabu.json
+│   ├── nuclei.json
+│   ├── ferox.json
+│   ├── js_analysis.json
+│   ├── takeover_candidates.json
+│   ├── reflection_candidates.json
+│   └── parameter_clusters.json
+├── manual_queue.json
+├── summary.json
+└── report.html
+```
 
-    ```bash
-    python main.py --target example.com --all
-    ```
+## Installed tools expected in PATH
 
-*   **Run only the reconnaissance phase:**
+- subfinder
+- assetfinder
+- amass
+- dnsx
+- httpx
+- katana
+- wafw00f
+- naabu
+- nuclei
+- gau
+- waybackurls
+- feroxbuster (optional)
 
-    ```bash
-    python main.py --target example.com --recon
-    ```
+## Usage examples
 
-*   **Run only the scanning phase:**
+Run everything in safe mode:
 
-    ```bash
-    python main.py --target example.com --scan
-    ```
+```bash
+python main.py --target example.com --all --profile safe
+```
 
-*   **Generate a report:**
+Run without TUI:
 
-    ```bash
-    python main.py --target example.com --report
-    ```
+```bash
+python main.py --target example.com --all --profile safe --no-tui
+```
 
-The output of the scans will be saved in the `output/` directory, organized by target.
+Resume from previous JSON outputs:
 
-## Disclaimer
+```bash
+python main.py --target example.com --all --resume
+```
 
-This toolkit is for educational purposes only. Use it at your own risk. The author is not responsible for any misuse or damage caused by this toolkit.
+Limit live surface and archive volume while tuning:
+
+```bash
+python main.py --target example.com --all --max-hosts 20 --max-urls 75 --max-archive-urls 1000
+```
+
+## Practical workflow
+
+1. run recon + scan in `safe`
+2. inspect `summary.json`
+3. inspect top items in `manual_queue.json`
+4. inspect `reflection_candidates.json`
+5. inspect `takeover_candidates.json`
+6. inspect `parameter_clusters.json`
+7. manually test the highest-value items first
+
+## Hard truth
+
+No, it still cannot guarantee that all recon and all useful scans are completely finished in a way that removes the need for human thinking.
+
+What it *can* do now is cover most of the repetitive groundwork:
+
+- subdomain discovery
+- liveness probing
+- archive ingestion
+- crawling
+- port discovery
+- content discovery if enabled
+- nuclei candidate routing
+- JS review
+- takeover hints
+- parameter grouping
+- light reflection checks
+
+That is enough to move you much closer to a manual-testing-only phase.
+Not all the way there.

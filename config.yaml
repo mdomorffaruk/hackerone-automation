@@ -1,112 +1,100 @@
-
-# -----------------------------------------------------------------------------
-# Bug Bounty Automation Framework Configuration
-# -----------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------------
-# TARGET SCOPE
-#
-# Define the scope of your bug bounty hunting.
-#
-# - targets: A list of your primary targets (e.g., example.com).
-# - scope_file: Path to a file containing a list of in-scope domains/subdomains.
-#               This can be used to load a large number of targets from a file.
-# - out_of_scope: A list of domains/subdomains to exclude from scanning.
-# -----------------------------------------------------------------------------
 scope:
   targets:
-    - "nba.com"
-    - "wnba.com"
+    - "example.com"
   scope_file: null
   out_of_scope:
     - "example.out.of.scope.com"
 
-# -----------------------------------------------------------------------------
-# WORDLISTS
-#
-# Specify the paths to the wordlists you want to use for various tasks.
-# -----------------------------------------------------------------------------
 wordlists:
   subdomains: "/snap/seclists/current/Discovery/DNS/subdomains-top1million-5000.txt"
   content: "/snap/seclists/current/Discovery/Web-Content/common.txt"
-  # Add more wordlists as needed (e.g., for fuzzing, password cracking, etc.)
-  # fuzzing: "/path/to/fuzzing_wordlist.txt"
 
-# -----------------------------------------------------------------------------
-# TOOLS
-#
-# Configure the tools that the framework will use. You can enable/disable
-# tools and specify their settings.
-# -----------------------------------------------------------------------------
+prioritization:
+  nuclei_min_score: 8
+
+output:
+  directory: "output"
+
+global_delay: 0.75
+threads: 3
+
+profiles:
+  safe:
+    global_delay: 1.0
+    threads: 2
+    tools:
+      subfinder: { flags: "-all -silent -rl 15" }
+      dnsx: { flags: "-silent -rl 15" }
+      httpx: { flags: "-silent -json -follow-redirects -title -tech-detect -status-code -content-length -web-server -location -cname -timeout 10 -rl 8" }
+      katana: { flags: "-silent -jc -aff -d 2 -rl 2 -timeout 10" }
+      naabu: { flags: "-silent -top-ports 200 -rate 250" }
+      feroxbuster: { flags: "--threads 2 --depth 1 -C 404 --auto-tune --timeout 10" }
+      nuclei: { flags: "-silent -jsonl -rl 3 -timeout 10 -retries 1" }
+  normal:
+    global_delay: 0.5
+    threads: 3
+    tools:
+      subfinder: { flags: "-all -silent -rl 25" }
+      dnsx: { flags: "-silent -rl 25" }
+      httpx: { flags: "-silent -json -follow-redirects -title -tech-detect -status-code -content-length -web-server -location -cname -timeout 10 -rl 12" }
+      katana: { flags: "-silent -jc -aff -d 3 -rl 4 -timeout 10" }
+      naabu: { flags: "-silent -top-ports 500 -rate 600" }
+      feroxbuster: { flags: "--threads 3 --depth 2 -C 404 --auto-tune --timeout 10" }
+      nuclei: { flags: "-silent -jsonl -rl 5 -timeout 10 -retries 1" }
+  aggressive:
+    global_delay: 0.2
+    threads: 5
+    tools:
+      subfinder: { flags: "-all -silent -rl 40" }
+      dnsx: { flags: "-silent -rl 40" }
+      httpx: { flags: "-silent -json -follow-redirects -title -tech-detect -status-code -content-length -web-server -location -cname -timeout 10 -rl 20" }
+      katana: { flags: "-silent -jc -aff -d 3 -rl 8 -timeout 10" }
+      naabu: { flags: "-silent -top-ports 1000 -rate 1500" }
+      feroxbuster: { flags: "--threads 6 --depth 2 -C 404 --auto-tune --timeout 10" }
+      nuclei: { flags: "-silent -jsonl -rl 10 -timeout 10 -retries 1" }
+
 tools:
-  # Subdomain Enumeration
   subfinder:
     enabled: true
-    flags: "-silent"
+    flags: "-all -silent -rl 15"
   assetfinder:
     enabled: true
     flags: "--subs-only"
   amass:
     enabled: true
-    flags: "enum -passive" # Use passive enumeration for speed
-
-  # Probing
+    flags: "enum -passive"
+  dnsx:
+    enabled: true
+    flags: "-silent -rl 15"
   httpx:
     enabled: true
-    flags: "-silent -no-color -follow-redirects -title -status-code -web-server"
-
-  # Port Scanning
-  nmap:
+    flags: "-silent -json -follow-redirects -title -tech-detect -status-code -content-length -web-server -location -cname -timeout 10 -rl 8"
+  katana:
     enabled: true
-    flags: "-T4 -F" # Fast scan
-
-  # Technology Identification
-  whatweb:
+    flags: "-silent -jc -aff -d 2 -rl 2 -timeout 10"
+  wafw00f:
     enabled: true
-    flags: "--no-errors"
-
-  # Content Discovery
-  dirsearch:
-    enabled: false # Disabled by default as it can be noisy
-    flags: "-e php,html,js,asp,aspx,jsp,txt,bak,old,zip,rar,7z,sql,db,sqlite,git,svn,hg,DS_Store -t 50"
-  gobuster:
+    flags: ""
+  gau:
     enabled: true
-    flags: "dir -t 50"
-
-  # Vulnerability Scanning
+    flags: ""
+  waybackurls:
+    enabled: true
+    flags: ""
+  naabu:
+    enabled: true
+    flags: "-silent -top-ports 200 -rate 250"
+  feroxbuster:
+    enabled: false
+    flags: "--threads 2 --depth 1 -C 404 --auto-tune --timeout 10"
   nuclei:
     enabled: true
-    flags: "-silent -c 50"
-    # You can specify which templates to use here
+    flags: "-silent -jsonl -rl 3 -timeout 10 -retries 1"
+    severity: ["medium", "high", "critical"]
     templates:
-      - "technologies"
-      - "cves"
-      - "vulnerabilities"
-      - "default-logins"
-      - "exposed-panels"
-
-# -----------------------------------------------------------------------------
-# API KEYS
-#
-# Add your API keys for services like HackerOne, Shodan, etc.
-# The script will look for these environment variables.
-# -----------------------------------------------------------------------------
-api_keys:
-  hackerone_username: ${HACKERONE_USERNAME}
-  hackerone_api_key: ${HACKERONE_API_KEY}
-  # shodan_api_key: ${SHODAN_API_KEY}
-
-# -----------------------------------------------------------------------------
-# OUTPUT
-#
-# Configure the output directory for the scan results.
-# -----------------------------------------------------------------------------
-output:
-  directory: "output"
-
-# -----------------------------------------------------------------------------
-# THREADS
-#
-# Configure the number of threads to use for scanning.
-# -----------------------------------------------------------------------------
-threads: 4
+      - "http/takeovers/"
+      - "http/exposures/"
+      - "http/exposed-panels/"
+      - "http/misconfiguration/"
+      - "http/default-logins/"
+      - "http/cves/"
