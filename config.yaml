@@ -85,7 +85,7 @@ tools:
     enabled: true
     flags: "-silent -top-ports 200 -rate 250"
   feroxbuster:
-    enabled: false
+    enabled: true
     flags: "--threads 2 --depth 1 -C 404 --auto-tune --timeout 10"
   nuclei:
     enabled: true

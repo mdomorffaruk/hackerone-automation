@@ -1,5 +1,22 @@
 # Project Updates
 
+## v0.6.0
+
+### Fixed
+- `--no-tui` now runs a real console pipeline instead of relying on the Textual headless path.
+- Applied execution profiles correctly. Before this, `--profile` existed but did not actually modify runtime config.
+- Added heartbeat logging for long-running tools so the run no longer looks dead when a subprocess is quiet.
+- Improved widget lookup in the TUI log panes to avoid brittle query behavior.
+- Enabled `feroxbuster` by default for better automatic content discovery.
+
+### Changed
+- Console mode now prints phase status and tool commands directly.
+- Subprocess environment is merged more safely and defaults to unbuffered Python output where applicable.
+
+### Reality check
+- This is still a candidate generator, not a guaranteed vuln finder.
+- It can reduce dead time and produce a stronger manual queue, but it cannot replace validation and exploit development.
+
 ## v0.5.0
 
 ### Added
@@ -21,7 +38,3 @@
 - Ugly `KeyboardInterrupt` shutdown path from the TUI runner.
 - Process tracking when multiple commands of the same tool are active.
 - Better stop handling for long-running subprocesses.
-
-### Reality check
-- This still does not replace manual validation.
-- This version is meant to reduce grunt work, not generate fake certainty.

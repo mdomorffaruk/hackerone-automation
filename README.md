@@ -1,4 +1,4 @@
-# H1 Automation v0.5.0
+# H1 Automation v0.6.0
 
 This version is built to do the boring work well enough that you can spend your time on manual testing instead of data cleanup.
 
@@ -115,8 +115,10 @@ python main.py --target example.com --all --profile safe
 Run without TUI:
 
 ```bash
-python main.py --target example.com --all --profile safe --no-tui
+python main.py --target example.com --all --profile safe --no-tui -v
 ```
+
+Console mode now prints phases, commands, and periodic heartbeat messages for long-running tools.
 
 Resume from previous JSON outputs:
 

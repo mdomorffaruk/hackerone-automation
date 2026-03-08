@@ -2,14 +2,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from app import AutomateApp
+from app import AutomateApp, run_headless
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=f"H1 Automation v{__version__} - realistic recon, enrichment, and manual test queue generation"
+        description=f"H1 Automation v{__version__} - recon, enrichment, and manual test queue generation"
     )
     parser.add_argument("-t", "--target", help="Single target domain to run")
     parser.add_argument("-c", "--config", default="config.yaml", help="Path to config.yaml")
@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         choices=["safe", "normal", "aggressive"],
         default="safe",
-        help="Execution profile. Safe is recommended for most bug bounty programs.",
+        help="Execution profile. Safe is recommended for most programs.",
     )
     return parser
 
@@ -44,9 +44,12 @@ def main() -> int:
     if not config_path.exists():
         parser.error(f"Config file not found: {config_path}")
 
+    if args.no_tui:
+        return run_headless(args)
+
     app = AutomateApp(args=args)
     try:
-        app.run(headless=args.no_tui)
+        app.run()
         return 0
     except KeyboardInterrupt:
         try:

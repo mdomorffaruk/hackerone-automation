@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
 import shutil
-import signal
 import subprocess
 import time
 from pathlib import Path
@@ -69,9 +69,14 @@ def tool_exists(name: str) -> bool:
 
 
 def log_message(app, tool_name: str, message: str) -> None:
-    if app and tool_name:
+    if app and hasattr(app, "call_from_thread"):
         app.call_from_thread(app.add_tool_log, tool_name)
         app.call_from_thread(app.update_tool_log, tool_name, message)
+        return
+
+    prefix = f"[{tool_name}] " if tool_name else ""
+    for line in str(message).splitlines(True):
+        print(prefix + line, end="")
 
 
 def wait_if_paused(app) -> None:
@@ -92,6 +97,15 @@ def apply_profile(config: Dict[str, Any], profile_name: str) -> Dict[str, Any]:
         if tool_name not in merged.get("tools", {}):
             continue
         merged["tools"][tool_name].update(values)
+    return merged
+
+
+def _merge_env(env: Optional[Dict[str, str]]) -> Dict[str, str]:
+    merged = os.environ.copy()
+    merged.setdefault("PYTHONUNBUFFERED", "1")
+    merged.setdefault("COLUMNS", "160")
+    if env:
+        merged.update(env)
     return merged
 
 
@@ -134,7 +148,7 @@ def run_tool(
             stderr=subprocess.STDOUT,
             text=True,
             cwd=str(cwd) if cwd else None,
-            env=env,
+            env=_merge_env(env),
             bufsize=1,
         )
     except FileNotFoundError:
@@ -142,8 +156,11 @@ def run_tool(
         log_message(app, tool_name or "tool", msg)
         return {"ok": False, "missing_dependency": args[0], "stdout": "", "lines": []}
 
-    if app and tool_name:
+    if app and tool_name and hasattr(app, "register_process"):
         app.register_process(tool_name, process)
+
+    last_activity = time.time()
+    heartbeat_every = 15
 
     try:
         while True:
@@ -158,15 +175,24 @@ def run_tool(
 
             if process.stdout is None:
                 break
+
             line = process.stdout.readline()
-            if not line:
-                if process.poll() is not None:
-                    break
-                time.sleep(0.05)
+            if line:
+                last_activity = time.time()
+                stdout_lines.append(line)
+                if verbose >= 2:
+                    log_message(app, tool_name or "tool", line)
                 continue
-            stdout_lines.append(line)
-            if verbose >= 2:
-                log_message(app, tool_name or "tool", line)
+
+            if process.poll() is not None:
+                break
+
+            if verbose >= 1 and (time.time() - last_activity) >= heartbeat_every:
+                elapsed = round(time.time() - started, 1)
+                log_message(app, tool_name or "tool", f"[still running after {elapsed}s]\n")
+                last_activity = time.time()
+
+            time.sleep(0.1)
     finally:
         try:
             return_code = process.wait(timeout=2)
@@ -176,7 +202,7 @@ def run_tool(
             except Exception:
                 pass
             return_code = process.wait()
-        if app and tool_name:
+        if app and tool_name and hasattr(app, "unregister_process"):
             app.unregister_process(tool_name, process)
 
     duration = round(time.time() - started, 2)
