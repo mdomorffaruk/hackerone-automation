@@ -142,23 +142,3 @@ python main.py --target example.com --all --max-hosts 20 --max-urls 75 --max-arc
 6. inspect `parameter_clusters.json`
 7. manually test the highest-value items first
 
-## Hard truth
-
-No, it still cannot guarantee that all recon and all useful scans are completely finished in a way that removes the need for human thinking.
-
-What it *can* do now is cover most of the repetitive groundwork:
-
-- subdomain discovery
-- liveness probing
-- archive ingestion
-- crawling
-- port discovery
-- content discovery if enabled
-- nuclei candidate routing
-- JS review
-- takeover hints
-- parameter grouping
-- light reflection checks
-
-That is enough to move you much closer to a manual-testing-only phase.
-Not all the way there.
